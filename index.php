@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <?php
 require(__DIR__."/config/config.php");
-$p = 0;
-if (isset($_POST["problem"]) && is_numeric($_POST["problem"])) {
-	$p = (int)($_POST["problem"]);
+$p = "";
+if (isset($_POST["problem"])) {
+	$p = $_POST["problem"];
 }
 ?>
 <html>
@@ -24,8 +24,8 @@ function getmain() {
 <form method="post">
 	題號：<select name="problem">
 	<?php
-	for ($i=1; $i <= 7; $i++) {
-		?><option value="<?=$i?>" <?php echo (!isset($C["testdata"][$i])?"disabled":"")?> <?php echo (($i==$p)?"selected":""); ?> ><?=$C['problemname'][$i]?> </option><?php
+	foreach ($C["problemname"] as $id => $_) {
+		?><option value="<?=$id?>" <?php echo (!isset($C["testdata"][$id])?"disabled":"")?> <?php echo (($id==$p)?"selected":""); ?> ><?=$C['problemname'][$id]?> </option><?php
 	}
 	?>
 	</select><br>
@@ -38,18 +38,24 @@ function getmain() {
 <?php
 set_time_limit(10);
 if (isset($_POST["code"])) {
+	$ok = true;
 	if (!isset($C["testdata"][$p])) {
 		echo '<span style="color: red;">題號錯誤</span><br>';
+		$ok = false;
 	}
-	$testcnt = $C["testdata"][$p];
-	putenv('LC_ALL=en_US.UTF-8');
+	if ($ok) {
+		$testcnt = $C["testdata"][$p];
+		putenv('LC_ALL=en_US.UTF-8');
 
-	exec("isolate --cleanup 2>&1", $output, $return);
-	unset($output);
-	exec("isolate --init 2>&1", $output);
-	if (count($output) < 1 || !is_dir($output[0]."/box")) {
+		exec("isolate --cleanup 2>&1", $output, $return);
+		unset($output);
+		exec("isolate --init 2>&1", $output);
+	}
+	if ($ok && (count($output) < 1 || !is_dir($output[0]."/box"))) {
 		echo "建立執行環境失敗<br>";
-	} else {
+		$ok = false;
+	}
+	if ($ok) {
 		$sandbox = $output[0]."/box";
 
 		file_put_contents($sandbox."/program.java", $_POST["code"]);
